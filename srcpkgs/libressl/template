@@ -39,6 +39,7 @@ post_install() {
 }
 
 libcrypto37_package() {
+        shlib_provides="libcrypto.1.0.0"
 	short_desc+=" - crypto library"
 	pkg_install() {
 		vmove usr/lib/libcrypto.so.*

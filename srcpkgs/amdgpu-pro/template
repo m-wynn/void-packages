@@ -1,0 +1,620 @@
+#Template file for ${pkgname}
+_release="16.30.3"
+_build="315407"
+_desc="amdgpu-pro driver ${_release} for Linux"
+
+pkgname=amdgpu-pro
+version=${_release}.${_build}
+revision=1
+maintainer="Matthew Wynn <matthew@matthewwynn.com>"
+license="Proprietary AMD License"
+homepage="http://www.amd.com"
+shlib_provides="libcrypto.so.1.0.0"
+
+only_for_archs="x86_64"
+hostmakedepends="wget"
+subpackages="amdgpu-pro-clinfo ${pkgname}-computing ${pkgname}-core ${pkgname}-graphics ${pkgname}-32bit ${pkgname}-opencl-devel-32bit ${pkgname}-opencl-devel ${pkgname}-libopencl1 ${pkgname}-libopencl1-32bit ${pkgname}-opencl-icd ${pkgname}-opencl-icd-32bit ${pkgname}-vulkan-driver ${pkgname}-vulkan-driver-32bit libdrm-${pkgname}-amdgpu1 libdrm-${pkgname}-amdgpu1-32bit libdrm-${pkgname}-devel-32bit libdrm-${pkgname}-devel libdrm-${pkgname}-tools libdrm2-${pkgname} libdrm2-${pkgname}-32bit libegl1-${pkgname} libegl1-${pkgname}-32bit libegl1-${pkgname}-devel-32bit libegl1-${pkgname}-devel libgbm-${pkgname}-devel libgbm-${pkgname}-devel-32bit libgbm1-${pkgname} libgbm1-${pkgname}-32bit libgl1-${pkgname}-devel-32bit libgl1-${pkgname}-devel libgl1-${pkgname}-dri-32bit libgl1-${pkgname}-dri libgl1-${pkgname}-glx libgl1-${pkgname}-glx-32bit libgles2-${pkgname} libgles2-${pkgname}-32bit libgles2-${pkgname}-devel libgles2-${pkgname}-devel-32bit libvdpau-${pkgname}-32bit libvdpau-${pkgname} xserver-xorg-video-${pkgname} ${pkgname}-dkms amdgpu-pro-firmware"
+
+depends="amdgpu-pro-graphics-${version}_${revision} ${pkgname}-computing-${version}_${revision}"
+short_desc="${_desc} - Utilities"
+create_wrksrc=yes
+nopie=yes
+
+XBPS_FETCH_CMD="wget --referer='http://support.amd.com/en-us/kb-articles/Pages/${PKGNAME}-Beta-Driver-for-Vulkan-Release-Notes.aspx' "
+
+distfiles="https://www2.ati.com/drivers/linux/amdgpu-pro_${_release}-${_build}.tar.xz"
+checksum=97d6fb64617cf2cefe780e5fb83b29d8ee4e3e7886b71fe3d92b0113847b2354
+
+
+do_extract() {
+	cd "${XBPS_SRCDISTDIR}/${pkgname}-${version}"
+	tar -xf "${pkgname}_${_release}-${_build}.tar.xz"
+	for deb in "amdgpu-pro-driver/"*.deb; do
+	ar x "$deb" data.tar.xz
+	tar -xf data.tar.xz
+	rm data.tar.xz
+	done
+}
+
+do_install() {
+
+	cd "${XBPS_SRCDISTDIR}/${pkgname}-${version}"
+	cp -r etc ${DESTDIR}/etc
+	cp -r lib ${DESTDIR}/lib
+	mkdir -p ${DESTDIR}/usr/{bin,include,share,src}
+	cp -r usr/bin/* ${DESTDIR}/usr/bin
+	cp -r usr/include/* ${DESTDIR}/usr/include
+	cp -r usr/lib/x86_64-linux-gnu/ ${DESTDIR}/usr/lib
+	cp -r usr/lib/i386-linux-gnu/ ${DESTDIR}/usr/lib32
+	cp -r usr/share/* ${DESTDIR}/usr/share
+	cp -r usr/src/* ${DESTDIR}/usr/src
+}
+
+
+amdgpu-pro-clinfo_package() {
+	short_desc="${_desc} - OpenCL info utility"
+	depends="amdgpu-pro-libopencl1"
+
+	pkg_install() {
+		vmove usr/bin/clinfo
+		vmove usr/share/doc/amdgpu-pro-clinfo
+	}
+}
+
+
+amdgpu-pro-computing_package() {
+	short_desc="${_desc} - OpenCL components"
+	depends="amdgpu-pro-core amdgpu-pro-clinfo amdgpu-pro-opencl-icd amdgpu-pro-opencl-devel"
+
+	pkg_install() {
+		vmove usr/share/doc/amdgpu-pro-computing
+	}
+
+}
+
+
+amdgpu-pro-core_package() {
+	short_desc="${_desc} - Core"
+	depends="linux-firmware libdrm-amdgpu-pro-amdgpu1"
+
+	pkg_install() {
+
+		vmove etc/amd/amdapfxx.blb
+
+		vmove lib/amdgpu-pro
+		vmove usr/share/amdgpu-pro
+		vmove usr/share/doc/amdgpu-pro-core
+		vmove usr/share/initramfs-tools
+
+		mkdir ${PKGDESTDIR}/usr/lib
+		mv ${PKGDESTDIR}/lib ${PKGDESTDIR}/usr/
+		sed -i 's/\/usr\/lib\/x86_64-linux-gnu\//\/usr\/lib\//' ${PKGDESTDIR}/usr/lib/amdgpu-pro/ld.conf
+		sed -i 's/\/usr\/lib\/i386-linux-gnu\//\/usr\/lib32\//' ${PKGDESTDIR}/usr/lib/amdgpu-pro/ld.conf
+		mkdir -p ${PKGDESTDIR}/etc/ld.so.conf.d/
+		ln -s /usr/lib/amdgpu-pro/ld.conf ${PKGDESTDIR}/etc/ld.so.conf.d/10-amdgpu-pro.conf
+		mkdir -p ${PKGDESTDIR}/etc/modprobe.d/
+		ln -s /usr/lib/amdgpu-pro/modprobe.conf ${PKGDESTDIR}/etc/modprobe.d/amdgpu-pro.conf
+
+	}
+
+}
+
+
+amdgpu-pro-dkms_package() {
+	short_desc="${_desc} - driver in DKMS format."
+	depends="dkms"
+
+	pkg_install() {
+
+		vmove usr/share/amdgpu-pro-dkms
+		vmove usr/share/doc/amdgpu-pro-dkms
+		vmove usr/src/amdgpu-pro-${_release}-${_build}
+	}
+}
+
+
+amdgpu-pro-firmware_package() {
+	short_desc="${_desc} - Firmware for amdgpu-pro cards."
+
+	pkg_install() {
+
+		vmove lib/firmware
+		mv ${PKGDESTDIR}/lib ${PKGDESTDIR}/usr/
+
+		vmove usr/share/doc/amdgpu-pro-firmware
+	}
+}
+
+
+amdgpu-pro-graphics_package() {
+	short_desc="${_desc} - graphics components."
+	depends="amdgpu-pro-core libgles2-amdgpu-pro libgl1-amdgpu-pro-devel libgl1-amdgpu-pro-dri xserver-xorg-video-amdgpu-pro amdgpu-pro-vulkan-driver libvdpau-amdgpu-pro"
+	provides="libGL-${version}_${revision}"
+	replaces="libgl>=0"
+
+	pkg_install() {
+		vmove etc/amd/amdrc
+		vmove etc/gbm/
+		vmove usr/share/X11
+		vmove usr/share/doc/amdgpu-pro-graphics
+	}
+
+}
+
+
+amdgpu-pro-32bit_package() {
+	short_desc="${_desc} - x86 libs for x86_64 machine usage."
+	depends="libgles2-amdgpu-pro-32bit libgl1-amdgpu-pro-devel-32bit libgl1-amdgpu-pro-dri-32bit libgbm1-amdgpu-pro-32bit amdgpu-pro-opencl-icd-32bit amdgpu-pro-opencl-devel-32bit amdgpu-pro-vulkan-driver-32bit libvdpau-amdgpu-pro-32bit"
+	provides="libGL-32bit-${version}_${revision}"
+	replaces="libgl-32bit>=0"
+
+	pkg_install() {
+		vmove usr/share/doc/amdgpu-pro-lib32
+	}
+}
+
+
+amdgpu-pro-opencl-devel-32bit_package () {
+	short_desc="${_desc} - OpenCL ICD Loader library - 32-bit"
+	depends="amdgpu-pro-libopencl1-32bit"
+
+	pkg_install() {
+		vmove usr/lib32/libOpenCL.so
+		vmove usr/lib32/amdgpu-pro/libOpenCL.so
+	}
+}
+
+
+amdgpu-pro-opencl-devel_package() {
+	short_desc="${_desc} - OpenCL ICD Loader library - 32-bit"
+	depends="amdgpu-pro-libopencl1"
+
+	pkg_install() {
+		vmove usr/lib/libOpenCL.so
+		vmove usr/lib/amdgpu-pro/libOpenCL.so
+		vmove usr/share/doc/amdgpu-pro-libopencl-dev
+	}
+}
+
+
+amdgpu-pro-libopencl1_package () {
+	short_desc="${_desc} - AMD OpenCL ICD Loader library"
+
+	pkg_install() {
+		vmove usr/lib/amdgpu-pro/libOpenCL.so.1
+		vmove usr/share/doc/amdgpu-pro-libopencl1
+	}
+}
+
+
+amdgpu-pro-libopencl1-32bit_package () {
+	short_desc="${_desc} - AMD OpenCL ICD Loader library"
+
+	pkg_install() {
+		vmove usr/lib32/amdgpu-pro/libOpenCL.so.1
+	}
+}
+
+
+amdgpu-pro-opencl-icd_package() {
+	short_desc="${_desc} - non-free AMD OpenCL ICD Loaders"
+
+	pkg_install() {
+		vmove etc/OpenCL/vendors/amdocl64.icd
+		vmove usr/lib/amdgpu-pro/libamdocl12cl64.so
+		vmove usr/lib/amdgpu-pro/libamdocl64.so
+		vmove usr/share/doc/amdgpu-pro-opencl-icd
+	}
+}
+
+
+amdgpu-pro-opencl-icd-32bit_package () {
+	short_desc="${_desc} - non-free AMD OpenCL ICD Loaders - 32bit"
+
+	pkg_install() {
+		vmove etc/OpenCL/vendors/amdocl32.icd
+		vmove usr/lib32/amdgpu-pro/libamdocl12cl32.so
+		vmove usr/lib32/amdgpu-pro/libamdocl32.so
+	}
+
+}
+
+
+amdgpu-pro-vulkan-driver_package() {
+	short_desc="amdgpu-pro - Vulkan driver"
+	depends="libdrm-amdgpu-pro-amdgpu1"
+
+	pkg_install() {
+		vmove etc/vulkan/icd.d/amd_icd64.json
+		sed -i 's/\/usr\/lib\/x86_64-linux-gnu\//\/usr\/lib\//' ${PKGDESTDIR}/etc/vulkan/icd.d/amd_icd64.json
+		vmove usr/lib/amdvlk64.so
+		vmove usr/share/doc/amdgpu-pro-vulkan-driver
+	}
+
+}
+
+
+amdgpu-pro-vulkan-driver-32bit_package () {
+	short_desc="${_desc} - Vulkan driver - 32bit"
+	depends="libdrm-amdgpu-pro-amdgpu1-32bit"
+
+	pkg_install() {
+		vmove etc/vulkan/icd.d/amd_icd32.json
+		sed -i 's/\/usr\/lib\/i386-linux-gnu\//\/usr\/lib32\//' ${PKGDESTDIR}/etc/vulkan/icd.d/amd_icd32.json
+		vmove usr/lib32/amdvlk32.so
+	}
+}
+
+
+libdrm-amdgpu-pro-amdgpu1_package () {
+	short_desc="${_desc} - Userspace interface to kernel DRM services -- runtime"
+	depends="libdrm2-amdgpu-pro"
+
+	pkg_install() {
+		vmove usr/lib/amdgpu-pro/libdrm_amdgpu.so.1
+		vmove usr/lib/amdgpu-pro/libdrm_amdgpu.so.1.0.0
+		vmove usr/share/doc/libdrm-amdgpu-pro-amdgpu1
+	}
+
+}
+
+
+libdrm-amdgpu-pro-amdgpu1-32bit_package () {
+	short_desc="${_desc} - Userspace interface to amdgpu-specific kernel DRM services -- 32bit runtime"
+	depends="libdrm2-amdgpu-pro-32bit"
+
+	pkg_install() {
+		vmove usr/lib32/amdgpu-pro/libdrm_amdgpu.so.1
+		vmove usr/lib32/amdgpu-pro/libdrm_amdgpu.so.1.0.0
+	}
+
+}
+
+
+libdrm-amdgpu-pro-devel-32bit_package () {
+	short_desc="${_desc} - Userspace interface to kernel DRM services -- 32bit development files"
+	depends="libdrm2-amdgpu-pro-32bit libdrm-amdgpu-pro-amdgpu1-32bit"
+
+	pkg_install() {
+		vmove usr/lib32/amdgpu-pro/pkgconfig
+		vmove usr/lib32/amdgpu-pro/libdrm.la
+		vmove usr/lib32/amdgpu-pro/libdrm.so
+		vmove usr/lib32/amdgpu-pro/libdrm_amdgpu.la
+		vmove usr/lib32/amdgpu-pro/libdrm_amdgpu.so
+	}
+}
+
+
+libdrm-amdgpu-pro-devel_package() {
+	short_desc="${_desc} - Userspace interface to kernel DRM services -- development files"
+	depends="libdrm2-amdgpu-pro libdrm-amdgpu-pro-amdgpu1"
+
+	pkg_install() {
+		vmove usr/include/amdgpu-pro/libdrm
+		vmove usr/include/amdgpu-pro/libkms
+		vmove usr/include/amdgpu-pro/xf86drm.h
+		vmove usr/include/amdgpu-pro/xf86drmMode.h
+		vmove usr/lib/amdgpu-pro/pkgconfig
+		vmove usr/lib/amdgpu-pro/libdrm.la
+		vmove usr/lib/amdgpu-pro/libdrm.so
+		vmove usr/lib/amdgpu-pro/libdrm_amdgpu.la
+		vmove usr/lib/amdgpu-pro/libdrm_amdgpu.so
+		vmove usr/share/doc/libdrm-amdgpu-pro-dev
+	}
+}
+
+
+libdrm-amdgpu-pro-tools_package() {
+	short_desc="${_desc} - testing tools for libdrm-amdgpu-pro"
+	depends="libdrm-amdgpu-pro-amdgpu1 libdrm2-amdgpu-pro"
+
+	pkg_install() {
+		vmove usr/bin/amdgpu_test
+		vmove usr/bin/kmstest
+		vmove usr/bin/modeprint
+		vmove usr/bin/modetest
+		vmove usr/bin/proptest
+		vmove usr/bin/vbltest
+		vmove usr/share/doc/libdrm-amdgpu-pro-tools
+	}
+
+}
+
+
+libdrm2-amdgpu-pro_package () {
+	short_desc="${_desc} - Userspace interface to kernel DRM services -- runtime"
+
+	pkg_install() {
+		vmove usr/lib/amdgpu-pro/libdrm.so.2
+		vmove usr/lib/amdgpu-pro/libdrm.so.2.4.0
+		vmove usr/lib/amdgpu-pro/libkms.so.1
+		vmove usr/lib/amdgpu-pro/libkms.so.1.0.0
+		vmove usr/share/doc/libdrm2-amdgpu-pro
+	}
+}
+
+
+libdrm2-amdgpu-pro-32bit_package () {
+	short_desc="${_desc} - Userspace interface to kernel DRM services -- 32bit runtime"
+
+	pkg_install() {
+		vmove usr/lib32/amdgpu-pro/libdrm.so.2
+		vmove usr/lib32/amdgpu-pro/libdrm.so.2.4.0
+		vmove usr/lib32/amdgpu-pro/libkms.so.1
+		vmove usr/lib32/amdgpu-pro/libkms.so.1.0.0
+	}
+}
+
+
+libegl1-amdgpu-pro_package () {
+	short_desc="${_desc} - implementation of the EGL API -- runtime"
+
+
+	pkg_install() {
+		vmove usr/lib/amdgpu-pro/libEGL.so.1
+		mv ${PKGDESTDIR}/usr/lib/amdgpu-pro/libEGL.so.1 ${PKGDESTDIR}/usr/lib
+		rm -r ${PKGDESTDIR}/usr/lib/amdgpu-pro
+		vmove usr/share/doc/libegl1-amdgpu-pro
+	}
+
+}
+
+
+libegl1-amdgpu-pro-32bit_package () {
+	short_desc="${_desc} - implementation of the EGL API -- 32bit runtime"
+
+	pkg_install() {
+		vmove usr/lib32/amdgpu-pro/libEGL.so.1
+		mv ${PKGDESTDIR}/usr/lib32/amdgpu-pro/libEGL.so.1 ${PKGDESTDIR}/usr/lib32
+		rm -r ${PKGDESTDIR}/usr/lib32/amdgpu-pro
+	}
+}
+
+
+libegl1-amdgpu-pro-devel-32bit_package () {
+	short_desc="${_desc} - implementation of the EGL API -- 32bit development files"
+	depends="libegl1-amdgpu-pro-32bit"
+
+	pkg_install() {
+		vmove usr/lib32/amdgpu-pro/libEGL.so
+		mv ${PKGDESTDIR}/usr/lib32/amdgpu-pro/libEGL* ${PKGDESTDIR}/usr/lib32
+		rm -r ${PKGDESTDIR}/usr/lib32/amdgpu-pro
+	}
+
+}
+
+
+libegl1-amdgpu-pro-devel_package () {
+	short_desc="${_desc} - implementation of the EGL API -- development files"
+	depends="libegl1-amdgpu-pro"
+
+	pkg_install() {
+		vmove usr/lib/amdgpu-pro/libEGL.so
+		mv ${PKGDESTDIR}/usr/lib/amdgpu-pro/libEGL.so ${PKGDESTDIR}/usr/lib
+		rm -r ${PKGDESTDIR}/usr/lib/amdgpu-pro
+		vmove usr/share/doc/libegl1-amdgpu-pro-dev
+	}
+
+
+}
+
+
+libgbm-amdgpu-pro-devel_package() {
+	short_desc="${_desc} - generic buffer management API -- development files"
+	depends="libgbm1-amdgpu-pro"
+
+	pkg_install() {
+		vmove usr/share/doc/libgbm-amdgpu-pro-dev
+	}
+}
+
+
+libgbm-amdgpu-pro-devel-32bit_package () {
+	short_desc="${_desc} - generic buffer management API -- 32bit development files"
+	depends="libgbm1-amdgpu-pro-32bit"
+	build_style="meta"
+
+}
+
+
+libgbm1-amdgpu-pro_package () {
+	short_desc="${_desc} - generic buffer management API -- runtime"
+	depends="libdrm-amdgpu-pro-amdgpu1 libdrm2-amdgpu-pro"
+
+	pkg_install() {
+		vmove usr/lib/amdgpu-pro/gbm
+		vmove usr/lib/amdgpu-pro/libgbm.so.1
+		vmove usr/lib/amdgpu-pro/libgbm.so.1.0.0
+		vmove usr/share/doc/libgbm1-amdgpu-pro
+	}
+}
+
+
+libgbm1-amdgpu-pro-32bit_package () {
+	short_desc="${_desc} - generic buffer management API -- 32bit runtime"
+	depends="libdrm-amdgpu-pro-amdgpu1-32bit libdrm2-amdgpu-pro-32bit"
+
+
+	pkg_install() {
+		vmove usr/lib32/amdgpu-pro/gbm
+		vmove usr/lib32/amdgpu-pro/libgbm.so.1
+		vmove usr/lib32/amdgpu-pro/libgbm.so.1.0.0
+	}
+}
+
+
+libgl1-amdgpu-pro-devel-32bit_package () {
+	short_desc="${_desc} - implementation of the OpenGL API -- 32bit GLX development files"
+	depends="libgl1-amdgpu-pro-glx-32bit"
+
+	pkg_install() {
+		vmove usr/lib32/amdgpu-pro/libGL.so
+		mv ${PKGDESTDIR}/usr/lib32/amdgpu-pro/libGL.so ${PKGDESTDIR}/usr/lib32
+		rm -r ${PKGDESTDIR}/usr/lib32/amdgpu-pro
+	}
+
+}
+
+
+libgl1-amdgpu-pro-devel_package () {
+	short_desc="${_desc} - implementation of the OpenGL API -- GLX development files"
+	depends="libgl1-amdgpu-pro-glx"
+
+	pkg_install() {
+		vmove usr/lib/amdgpu-pro/libGL.so
+		mv ${PKGDESTDIR}/usr/lib/amdgpu-pro/libGL.so ${PKGDESTDIR}/usr/lib
+		rm -r ${PKGDESTDIR}/usr/lib/amdgpu-pro
+		vmove usr/share/doc/libgl1-amdgpu-pro-dev
+	}
+
+}
+
+
+libgl1-amdgpu-pro-dri-32bit_package () {
+	short_desc="${_desc} - implementation of the OpenGL API -- 32bit DRI modules"
+	depends="libX11-32bit libXext-32bit"
+
+	pkg_install() {
+		vmove usr/lib32/dri/amdgpu_dri.so
+
+	}
+}
+
+
+libgl1-amdgpu-pro-dri_package () {
+	short_desc="${_desc} - implementation of the OpenGL API -- DRI modules"
+	depends="libX11 libXext"
+
+	pkg_install() {
+		vmove usr/lib/dri/amdgpu_dri.so
+		vmove usr/share/doc/libgl1-amdgpu-pro-dri
+	}
+}
+
+
+libgl1-amdgpu-pro-glx_package () {
+	short_desc="${_desc} - implementation of the OpenGL API -- GLX runtime"
+	depends="libdrm2-amdgpu-pro libX11 libxcb libxcb libxcb libXdamage libXext libXfixes libxshmfence libXxf86vm"
+
+	pkg_install() {
+		vmove usr/lib/amdgpu-pro/libGL.so.1
+		vmove usr/lib/amdgpu-pro/libGL.so.1.2
+		mv ${PKGDESTDIR}/usr/lib/amdgpu-pro/libGL* ${PKGDESTDIR}/usr/lib
+		rm -r ${PKGDESTDIR}/usr/lib/amdgpu-pro
+		vmove usr/share/doc/libgl1-amdgpu-pro-glx
+	}
+
+
+}
+
+
+libgl1-amdgpu-pro-glx-32bit_package () {
+	short_desc="${_desc} - implementation of the OpenGL API -- 32bit GLX runtime"
+	depends="libdrm2-amdgpu-pro-32bit libX11 libxcb libxcb-32bit libxcb libXdamage libXext-32bit libXfixes-32bit libxshmfence-32bit libXxf86vm-32bit"
+
+
+	pkg_install() {
+		vmove usr/lib32/amdgpu-pro/libGL.so.1
+		vmove usr/lib32/amdgpu-pro/libGL.so.1.2
+		mv ${PKGDESTDIR}/usr/lib32/amdgpu-pro/libGL* ${PKGDESTDIR}/usr/lib32
+		rm -r ${PKGDESTDIR}/usr/lib32/amdgpu-pro
+	}
+}
+
+
+libgles2-amdgpu-pro_package () {
+	short_desc="${_desc} - implementation of the OpenGL|ES 2.x API -- runtime"
+	depends="libegl1-amdgpu-pro"
+
+	pkg_install() {
+		vmove usr/lib/amdgpu-pro/libGLESv2.so.2
+		vmove usr/share/doc/libgles2-amdgpu-pro
+	}
+}
+
+
+libgles2-amdgpu-pro-32bit_package () {
+	short_desc="${_desc} - implementation of the OpenGL|ES 2.x API -- 32bit runtime"
+	depends="libegl1-amdgpu-pro-32bit"
+
+	pkg_install() {
+		vmove usr/lib32/amdgpu-pro/libGLESv2.so.2
+	}
+
+}
+
+
+libgles2-amdgpu-pro-devel_package () {
+	short_desc="${_desc} - implementation of the OpenGL|ES 2.x API -- development files"
+	depends="libgles2-amdgpu-pro"
+
+
+	pkg_install() {
+		vmove usr/lib/amdgpu-pro/libGLESv2.so
+		mv ${PKGDESTDIR}/usr/lib/amdgpu-pro/libGLES* ${PKGDESTDIR}/usr/lib
+		rm -r ${PKGDESTDIR}/usr/lib/amdgpu-pro
+		vmove usr/share/doc/libgles2-amdgpu-pro-dev
+	}
+
+}
+
+
+libgles2-amdgpu-pro-devel-32bit_package () {
+	short_desc="${_desc} - implementation of the OpenGL|ES 2.x API -- 32bit development files"
+	depends="libgles2-amdgpu-pro-32bit"
+
+
+	pkg_install() {
+		vmove usr/lib32/amdgpu-pro/libGLESv2.so
+		mv ${PKGDESTDIR}/usr/lib32/amdgpu-pro/libGLES* ${PKGDESTDIR}/usr/lib32
+		rm -r ${PKGDESTDIR}/usr/lib32/amdgpu-pro
+	}
+}
+
+
+libvdpau-amdgpu-pro-32bit_package () {
+	short_desc="${_desc} - 32bit AMDGPU Pro VDPAU driver"
+	depends="libdrm-amdgpu-pro-amdgpu1-32bit libdrm libdrm2-amdgpu-pro-32bit openssl libX11-32bit libxcb libxcb-32bit zlib"
+
+	pkg_install() {
+		vmove usr/lib32/vdpau
+	}
+}
+
+
+libvdpau-amdgpu-pro_package() {
+	short_desc="${_desc} AMDGPU Pro VDPAU driver"
+	depends="libdrm-amdgpu-pro-amdgpu1 libdrm libdrm2-amdgpu-pro openssl libX11 libxcb libxcb"
+
+	pkg_install() {
+		vmove usr/lib/vdpau
+		vmove usr/share/doc/libvdpau-amdgpu-pro
+	}
+
+}
+
+
+xserver-xorg-video-amdgpu-pro_package() {
+	short_desc="amdgpu-pro - X.Org X server -- AMD/ATI display driver"
+	depends="libdrm-amdgpu-pro-amdgpu1 libdrm2-amdgpu-pro libepoxy libgbm1-amdgpu-pro libgl1-amdgpu-pro-glx libX11 libxcb libXdamage libXext libXfixes libXxf86vm xorg-server"
+
+
+	pkg_install() {
+		vmove usr/lib/amdgpu-pro/1.15
+		vmove usr/lib/amdgpu-pro/1.16
+		vmove usr/lib/amdgpu-pro/1.17
+		vmove usr/lib/amdgpu-pro/1.18
+		vmove usr/lib/amdgpu-pro/xorg
+
+		mkdir -p ${PKGDESTDIR}/usr/lib/x86_64-linux-gnu
+		# This is needed because libglx.so has a hardcoded DRI_DRIVER_PATH
+		ln -s /usr/lib/dri ${PKGDESTDIR}/usr/lib/x86_64-linux-gnu/dri
+		mv ${PKGDESTDIR}/usr/lib/amdgpu-pro/1.18/ ${PKGDESTDIR}/usr/lib/xorg
+		rm -r ${PKGDESTDIR}/usr/lib/amdgpu-pro
+
+		vmove usr/share/man
+		vmove usr/share/doc/xserver-xorg-video-amdgpu-pro
+	}
+
+}
+
