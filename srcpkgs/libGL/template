@@ -100,6 +100,7 @@ post_install() {
 		mv "$DESTDIR/usr/lib32/d3d" "$DESTDIR/usr/lib"
 		mv "$DESTDIR/usr/lib32/pkgconfig"/* "$DESTDIR/usr/lib/pkgconfig"
 	fi
+	vlicense docs/license.html LICENSE.html
 }
 
 libglapi_package() {
