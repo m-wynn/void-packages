@@ -1,7 +1,7 @@
 # Template build file for 'libGL'.
 pkgname=libGL
 version=17.1.6
-revision=1
+revision=2
 wrksrc="mesa-${version}"
 build_style=gnu-configure
 configure_args="--enable-shared-glapi --enable-gbm
@@ -124,6 +124,7 @@ libEGL_package() {
 libGLES_package() {
 	depends="libudev"
 	short_desc="Free implementation of the OpenGL|ES 1.x and 2.x API"
+	shlib_provides="libGLESv2.so"
 	pkg_install() {
 		vmove "usr/lib/libGLES*.so*"
 	}

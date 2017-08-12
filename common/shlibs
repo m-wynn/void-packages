@@ -121,6 +121,7 @@ libEGL.so.1 libEGL-7.11_1
 libEGL.so.1 nvidia-libs-346.72_2
 libGLESv1_CM.so.1 libGLES-1.0_1
 libGLESv2.so.2 libGLES-1.0_1
+libGLESv2.so libGLES-1.0_1
 libEGL.so rpi-userland-0.0.0.0.20150907_1
 libGLES.so rpi-userland-0.0.0.0.20150907_1
 libGLESv2.so rpi-userland-0.0.0.0.20150907_1
